@@ -1,36 +1,27 @@
 import { createClient } from '@supabase/supabase-js';
 
-// 连接 Supabase
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
+// 通过 process.env 访问环境变量
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+
+// 创建 Supabase 客户端
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
-  if (req.method === 'POST') {
-    const { username, password } = req.body;
-
-    // 验证用户名和密码
-    const { data, error } = await supabase
-      .from('users')
-      .select('username, password, quota')
-      .eq('username', username)
-      .eq('password', password)
-      .single();
-
-    if (error || !data) {
-      return res.status(401).json({ error: '用户名或密码错误' });
+    if (req.method !== "POST") {
+        return res.status(405).json({ error: "Method Not Allowed" });
     }
 
-    // 额度 -1
-    const newQuota = data.quota - 1;
-    await supabase
-      .from('users')
-      .update({ quota: newQuota })
-      .eq('username', username);
+    const { username, message } = req.body;
 
-    return res.status(200).json({ message: '登录成功', username, quota: newQuota });
-  }
+    // 存入 Supabase 数据库
+    const { data, error } = await supabase
+        .from("messages")
+        .insert([{ username, message }]);
 
-  return res.status(405).json({ error: 'Method not allowed' });
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+
+    res.status(200).json({ reply: `收到消息：${message}`, data });
 }
