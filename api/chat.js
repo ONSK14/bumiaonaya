@@ -11,8 +11,9 @@ export default async function handler(req, res) {
     }
 
     try {
-        // **修正这里，使用 req.body**
-        const { username, password } = req.body;
+        // **改成 `await req.json()` 解析请求数据**
+        const body = await req.json();
+        const { username, password } = body || {};
 
         console.log("收到请求:", username, password);
 
